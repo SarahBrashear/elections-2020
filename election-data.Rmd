@@ -1,0 +1,103 @@
+---
+title: "Election Data"
+author: "Sarah Brashear"
+date: "3/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(tidyverse)
+library(rstanarm)
+```
+
+
+```{r}
+x <- read_csv(file = "raw_data/results.csv", skip = 1) %>%
+  select(CD, Biden, Trump) %>%
+  mutate(winner = ifelse(Biden > Trump, 1, 0))
+
+results <- x %>%
+  select(CD:Romney)
+```
+
+What percentage of Congressional districts did Biden win? 
+How would you estimate that if I just showed you the results from 50 units?
+
+## One way to solve
+
+```{r}
+
+bidencount <- results %>%
+  select(CD, Biden, Trump) %>%
+  mutate(winner = ifelse(Biden > Trump, 1, 0)) %>%
+  summarize(bidencount = sum(winner == 1)) 
+
+
+trumpcount <- results %>%
+  select(CD, Biden, Trump) %>%
+  mutate(winner = ifelse(Biden > Trump, 1, 0)) %>%
+  summarize(trumpcount = sum(winner == 1))
+
+totalcount <- bidencount + trumpcount
+
+biden_perc <- bidencount/totalcount
+
+```
+
+## A different way
+
+```{r}
+bidenperc <- results %>%
+  select(CD, Biden, Trump) %>%
+  mutate(winner = ifelse(Biden > Trump, 1, 0)) %>%
+  summarize(bidencount = sum(winner == 1) / n())
+
+```
+
+## Taking samples of 50
+
+```{r, random_sample}
+
+small <- x %>%
+  slice_sample(n = 50)
+
+```
+
+
+```{r, first_50}
+top50 <- x %>%
+  slice(1:50)
+```
+
+Population & representativeness 
+
+First 50 - the A name districts happen to be more likely to be Republican
+think: Alabama, Arkansas, Arizona
+
+Every 9th - not perfectly random, but does span more different states than 
+just the first 50??
+
+Random 50 - more representative, 50 out of 435 is a pretty large chunk 
+
+
+
+Our population - all 435 US Congressional districts
+units - each Congressional district
+
+
+```{r}
+
+fit_1 <- stan_glm(formula = winner ~ 1, 
+                  data = small,
+                  family = binomial,
+                  refresh = 0,
+                  seed = 2021)
+
+```
+
+
+
+
+
